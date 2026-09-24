@@ -57,7 +57,9 @@ describe("RF20", () => {
       expect(result.k).toBe(9);
       expect(result.classes.map((row) => row.fi)).toEqual(PRICE_FI);
       expect(result.classes[0]).toMatchObject({ lower: 19.1, upper: 26, mi: 22.55 });
-      expect(result.classes[8]).toMatchObject({ lower: 75.1, upper: 82, fi: 1, Hi: 1 });
+      expect(result.classes.map((row) => row.lower)).toEqual([19.1, 26.1, 33.2, 40.2, 47.2, 54.2, 61.3, 68.3, 75.3]);
+      expect(result.classes.map((row) => row.upper)).toEqual([26, 33.1, 40.1, 47.1, 54.1, 61.2, 68.2, 75.2, 82.2]);
+      expect(result.classes[8]).toMatchObject({ lower: 75.3, upper: 82.2, fi: 1, Hi: 1 });
       expect(result.minimum).toBeCloseTo(19.1, 10);
       expect(result.maximum).toBeCloseTo(75.3, 10);
       expect(measure(result, "p10")).toBeCloseTo(23.86, 10);

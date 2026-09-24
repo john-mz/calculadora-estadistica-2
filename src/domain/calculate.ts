@@ -74,21 +74,23 @@ export function calculate(values: ParsedValue[]): Distribution {
   const length = unitsToNumber(lengthUnits, decimals);
 
   const bounds: { lower: number; upper: number }[] = [];
-  let lower = minUnits;
-  for (let index = 0; index < kSturges; index += 1) {
-    const upper = lower + lengthUnits - 1;
-    bounds.push({ lower, upper });
-    lower = upper + 1;
-  }
-  while (maxUnits > bounds[bounds.length - 1].upper) {
-    const upper = lower + lengthUnits - 1;
-    bounds.push({ lower, upper });
-    lower = upper + 1;
-  }
+  const factor = 10 ** -decimals;
+  const amplitude = decimals === 0 ? length : lengthRaw;
+  let cursor = minimum;
+  const pushBound = () => {
+    const rawUpper = cursor + amplitude - factor;
+    bounds.push({
+      lower: roundHalfAway(cursor, decimals),
+      upper: roundHalfAway(rawUpper, decimals),
+    });
+    cursor = rawUpper + factor;
+  };
+  for (let index = 0; index < kSturges; index += 1) pushBound();
+  while (maximum > bounds[bounds.length - 1].upper) pushBound();
 
   const counts = bounds.map(() => 0);
   units.forEach((unit) => {
-    const index = bounds.findIndex((bound) => unit >= bound.lower && unit <= bound.upper);
+    const index = bounds.findIndex((bound) => unitsToNumber(unit, decimals) >= bound.lower && unitsToNumber(unit, decimals) <= bound.upper);
     if (index >= 0) counts[index] += 1;
   });
 
@@ -96,8 +98,8 @@ export function calculate(values: ParsedValue[]): Distribution {
   const classes: FrequencyClass[] = bounds.map((bound, index) => {
     const fi = counts[index];
     accumulated += fi;
-    const lower = unitsToNumber(bound.lower, decimals);
-    const upper = unitsToNumber(bound.upper, decimals);
+    const lower = bound.lower;
+    const upper = bound.upper;
     return {
       ci: index + 1,
       lower,
