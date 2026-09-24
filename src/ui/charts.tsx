@@ -72,10 +72,17 @@ export function OgiveChart({ result, title }: ChartProps) {
 
 export function renderChartImage(result: Distribution, title: string, kind: ChartKind): string {
   const canvas = document.createElement("canvas");
-  canvas.width = 900;
-  canvas.height = 480;
-  const chart = new ChartJS(canvas, configuration(result, title, kind));
-  const url = chart.toBase64Image();
+  canvas.width = 1200;
+  canvas.height = 640;
+  const config = configuration(result, title, kind);
+  config.options = {
+    ...config.options,
+    responsive: false,
+    animation: false,
+    devicePixelRatio: 1,
+  };
+  const chart = new ChartJS(canvas, config);
+  const url = chart.toBase64Image("image/png", 1);
   chart.destroy();
   return url;
 }
