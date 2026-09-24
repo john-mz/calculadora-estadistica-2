@@ -152,7 +152,8 @@ textarea.invalid { border-color: #900b09; }
 .chart-grid { grid-template-columns: 1fr 1fr; }
 .chart-card { padding: 16px; }
 .chart-card h3 { margin: 0 0 8px; font-size: 16px; display: flex; gap: 8px; align-items: center; }
-.chart-card svg { width: 100%; height: auto; }
+.chart-canvas { position: relative; height: 320px; }
+.chart-card svg, .chart-canvas canvas { width: 100%; height: auto; }
 .chart-switch { display: none; gap: 8px; flex-wrap: wrap; }
 .chart-switch button[aria-pressed="true"] { background: #2c2c2c; color: #fff; }
 
