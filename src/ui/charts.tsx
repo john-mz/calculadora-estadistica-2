@@ -15,7 +15,7 @@ import {
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import type { Distribution, FrequencyClass } from "../domain/calculate";
-import { formatBound, formatOutput } from "../domain/format";
+import { formatBound, formatMark, formatRelative } from "../domain/format";
 
 ChartJS.register(
   ArcElement,
@@ -102,7 +102,7 @@ function pieData(result: Distribution) {
 
 function barData(result: Distribution) {
   return {
-    labels: result.classes.map((row) => formatBound(row.mi, result.decimals)),
+    labels: result.classes.map((row) => formatMark(row.mi, result.decimals)),
     datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: SERIES, borderWidth: 0 }],
   };
 }
@@ -188,7 +188,14 @@ function lineOptions(title: string, kind: "poligono" | "ojiva", result: Distribu
       tooltip: { callbacks: { label: (item: { raw: unknown }) => percent((item.raw as { y: number }).y) } },
     },
     scales: {
-      x: { type: "linear" as const, grid: { color: "#d9d9d9" }, ticks: { color: "#595959" } },
+      x: {
+        type: "linear" as const,
+        grid: { color: "#d9d9d9" },
+        ticks: {
+          color: "#595959",
+          callback: (value: string | number) => formatMark(Number(value), result.decimals),
+        },
+      },
       y: {
         min: 0,
         max,
@@ -236,6 +243,6 @@ export function chartDataRows(result: Distribution, kind: ChartKind) {
   return result.classes.map((row) => ({
     ci: row.ci,
     label: intervalLabel(row, result.decimals),
-    value: kind === "pastel" || kind === "barras" ? formatOutput(row.hi) : kind === "poligono" ? `${formatOutput(row.mi)} · ${formatOutput(row.hi)}` : `${formatOutput(row.mi)} · ${formatOutput(row.Hi)}`,
+    value: kind === "pastel" || kind === "barras" ? formatRelative(row.hi) : kind === "poligono" ? `${formatMark(row.mi, result.decimals)} · ${formatRelative(row.hi)}` : `${formatMark(row.mi, result.decimals)} · ${formatRelative(row.Hi)}`,
   }));
 }

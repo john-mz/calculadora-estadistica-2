@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { Distribution } from "../domain/calculate";
-import { formatBound, formatInteger, formatMeasure, formatOutput } from "../domain/format";
+import { formatBound, formatInteger, formatMark, formatMeasure, formatRelative } from "../domain/format";
 import { renderChartImage } from "./charts";
 
 const INK = [30, 30, 30] as const;
@@ -153,9 +153,9 @@ function drawFrequencyTable(
       formatBound(row.upper, result.decimals),
       formatInteger(row.fi),
       formatInteger(row.Fi),
-      formatOutput(row.hi),
-      formatOutput(row.Hi),
-      formatOutput(row.mi),
+      formatRelative(row.hi),
+      formatRelative(row.Hi),
+      formatMark(row.mi, result.decimals),
     ];
     doc.setTextColor(...INK);
     doc.setFont("helvetica", "normal");
