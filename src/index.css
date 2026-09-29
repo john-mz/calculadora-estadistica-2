@@ -68,6 +68,28 @@ textarea {
 
 textarea.invalid { border-color: #900b09; }
 
+.text-input {
+  height: 40px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  color: #1e1e1e;
+}
+
+.count { margin: 0; color: #2c2c2c; font-size: 14px; font-weight: 600; }
+
+.errors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #900b09;
+  font-size: 14px;
+}
+
 .drop {
   border: 1px dashed #d9d9d9;
   border-radius: 8px;
@@ -107,6 +129,15 @@ textarea.invalid { border-color: #900b09; }
 .primary:disabled { background: #d9d9d9; color: #757575; cursor: not-allowed; }
 .neutral { background: #fff; color: #1e1e1e; border: 1px solid #d9d9d9; }
 
+.primary:focus-visible,
+.neutral:focus-visible,
+.link:focus-visible,
+textarea:focus-visible,
+.text-input:focus-visible {
+  outline: 2px solid #2c2c2c;
+  outline-offset: 2px;
+}
+
 .error { margin: 0; color: #900b09; font-size: 14px; }
 
 .card, .table-card, .chart-card, .measure, .step {
@@ -134,8 +165,9 @@ textarea.invalid { border-color: #900b09; }
   gap: 12px;
 }
 
-.summary, .chart-grid { display: grid; gap: 16px; }
-.summary { grid-template-columns: repeat(5, 1fr); }
+.summary { display: grid; gap: 16px; grid-template-columns: repeat(5, 1fr); }
+.preview-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.preview-more { padding: 8px 16px 16px; }
 .measure { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 .measure span { color: #757575; }
 .measure strong { font-size: 20px; }
@@ -149,13 +181,29 @@ textarea.invalid { border-color: #900b09; }
 .data-table th, .data-table td { border-bottom: 1px solid #d9d9d9; text-align: right; }
 .data-table th:first-child, .data-table td:first-child { text-align: left; }
 
-.chart-grid { grid-template-columns: 1fr 1fr; }
 .chart-card { padding: 16px; }
 .chart-card h3 { margin: 0 0 8px; font-size: 16px; display: flex; gap: 8px; align-items: center; }
 .chart-canvas { position: relative; height: 320px; }
 .chart-card svg, .chart-canvas canvas { width: 100%; height: auto; }
-.chart-switch { display: none; gap: 8px; flex-wrap: wrap; }
-.chart-switch button[aria-pressed="true"] { background: #2c2c2c; color: #fff; }
+.chart-switch { display: flex; gap: 8px; flex-wrap: wrap; }
+.chart-switch button[aria-pressed="true"] { background: #2c2c2c; color: #fff; border-color: #2c2c2c; }
+
+.app:has(.action-bar) { padding-bottom: 112px; }
+
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  width: min(1104px, 100%);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 48px;
+  background: #f5f5f5;
+  border-top: 1px solid #d9d9d9;
+}
 
 .freq-cards { display: none; flex-direction: column; gap: 12px; }
 .freq-card { background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 16px; }
@@ -197,17 +245,20 @@ h2 { margin: 0; font-size: 20px; }
   .actions { flex-direction: column-reverse; align-items: stretch; }
   .actions .link { text-align: center; }
   .row-actions { flex-direction: column; align-items: stretch; }
-  .row-actions .primary, .row-actions .neutral, .pdf-action, .status .primary, .freq-cards .neutral { width: 100%; }
+  .row-actions .primary, .row-actions .neutral, .status .primary, .freq-cards .neutral { width: 100%; }
+  .app:has(.action-bar) { padding-bottom: 148px; }
+  .action-bar {
+    flex-direction: column-reverse;
+    padding: 12px 16px;
+  }
+  .action-bar .primary, .action-bar .neutral { width: 100%; }
   .desktop-table { display: none; }
   .formula { grid-template-columns: 1fr; }
   .step summary { white-space: normal; }
-  .freq-cards, .chart-switch { display: flex; }
+  .freq-cards { display: flex; }
   .freq-card p { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 14px; }
   .chart-switch { flex-wrap: nowrap; }
   .chart-switch button { flex: 1; padding: 8px 4px; font-size: 13px; }
-  .chart-grid { grid-template-columns: 1fr; }
-  .chart-grid .chart-card { display: none; }
-  .chart-grid .chart-card.active { display: block; }
   .chart-card { overflow: hidden; }
   .data-table { font-size: 13px; }
 }
