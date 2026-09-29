@@ -2,12 +2,7 @@ import { jsPDF } from "jspdf";
 import type { Distribution } from "../domain/calculate";
 import { formatBound, formatInteger, formatMark, formatMeasure, formatRelative } from "../domain/format";
 import { renderChartImage } from "./charts";
-
-const INK = [30, 30, 30] as const;
-const MUTED = [117, 117, 117] as const;
-const PAPER = [245, 245, 245] as const;
-const LINE = [217, 217, 217] as const;
-const BRAND = [44, 44, 44] as const;
+import { PDF_BRAND as BRAND, PDF_INK as INK, PDF_LINE as LINE, PDF_MUTED as MUTED, PDF_PAPER as PAPER } from "./palette";
 
 export function downloadPdf(result: Distribution, name: string): void {
   const doc = new jsPDF({ unit: "pt", format: "a4" });

@@ -470,16 +470,16 @@ function ChartCard({
 function ChevronLeft() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M10 12.5 5.5 8 10 3.5" fill="none" stroke="#1e1e1e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 12.5 5.5 8 10 3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function FileIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M8 4h10l6 6v18H8V4z" fill="none" stroke="#1e1e1e" strokeWidth="1.5" />
-      <path d="M18 4v6h6" fill="none" stroke="#1e1e1e" strokeWidth="1.5" />
+    <svg className="file-icon" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M8 4h10l6 6v18H8V4z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M18 4v6h6" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }
