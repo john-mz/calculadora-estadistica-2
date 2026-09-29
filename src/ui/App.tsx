@@ -1,7 +1,15 @@
 import { distinctCount, type Distribution } from "../domain/calculate";
 import { EXAMPLE_NAME, exampleText } from "../domain/example";
 import { formatBound, formatInteger, formatLengthRaw, formatMark, formatMeasure, formatOutput, formatRelative } from "../domain/format";
-import { byteLength, parseInput, type ParsedInput } from "../domain/parse";
+import {
+  byteLength,
+  datasetDecimals,
+  parseInput,
+  toUnits,
+  unitsToNumber,
+  type ParsedInput,
+  type ParsedValue,
+} from "../domain/parse";
 import { MAX_BYTES } from "../domain/limits";
 import indicador from "../assets/indicador.svg";
 import { BarChart, chartDataRows, OgiveChart, PieChart, PolygonChart } from "./charts";
@@ -34,6 +42,10 @@ export default function App() {
   const parsed = useMemo(() => parseInput(text), [text]);
   const name = nameOverride ?? parsed.name;
   const blocked = blockReason(parsed);
+  const extent = useMemo(
+    () => (step === "preview" ? valueExtent(parsed.values) : null),
+    [step, parsed.values],
+  );
 
   useEffect(() => {
     saveSession({ text, nameOverride, step: step === "processing" ? "results" : step });
@@ -95,22 +107,15 @@ export default function App() {
         />
       ) : null}
 
-      {step === "preview" ? (
-        <section className="section">
-          <div className="table-card">
-            <header>{name ? `${name} · primeras 5 filas` : "Primeras 5 filas"}</header>
-            {parsed.values.slice(0, 5).map((value, index) => (
-              <div className="preview-row" key={index}>
-                <span>Fila {index + 1}</span>
-                <strong>{formatBound(value.units / 10 ** value.decimals, value.decimals)}</strong>
-              </div>
-            ))}
-          </div>
-          <div className="row-actions">
-            <button className="neutral" type="button" onClick={() => setStep("input")}>Corregir datos</button>
-            <button className="primary" type="button" onClick={() => setStep("processing")}>Procesar datos</button>
-          </div>
-        </section>
+      {step === "preview" && extent ? (
+        <PreviewScreen
+          name={name}
+          parsed={parsed}
+          extent={extent}
+          onName={setNameOverride}
+          onCorrect={() => setStep("input")}
+          onProcess={() => setStep("processing")}
+        />
       ) : null}
 
       {step === "processing" ? (
@@ -132,6 +137,13 @@ export default function App() {
           onToggleAll={() => setShowAll((value) => !value)}
           onChart={setChart}
           onToggleData={(kind) => setOpenData((current) => (current === kind ? null : kind))}
+          onRestart={() => {
+            setResult(null);
+            setShowAll(false);
+            setChart("pastel");
+            setOpenData("pastel");
+            setStep("input");
+          }}
         />
       ) : null}
     </main>
@@ -158,6 +170,10 @@ function InputScreen({
   onFileError: (message: string | null) => void;
 }) {
   const messages = fileError ? [fileError] : errorMessages(parsed, blocked);
+  const showCount = !fileError && !parsed.tooBig;
+  const describedBy = [showCount ? "conteo" : null, messages.length ? "errores" : null].filter(Boolean).join(" ");
+  const visibleMessages = messages.slice(0, 8);
+  const hiddenErrors = messages.length - visibleMessages.length;
   return (
     <>
       <div className="field">
@@ -168,14 +184,16 @@ function InputScreen({
           className={messages.length ? "invalid" : undefined}
           value={text}
           aria-invalid={messages.length > 0}
-          aria-describedby={messages.length ? "errores" : undefined}
+          aria-describedby={describedBy || undefined}
           onChange={(event) => onText(event.target.value)}
         />
+        {showCount ? <p className="count" id="conteo">{countLabel(parsed.values.length)}</p> : null}
       </div>
-      {messages.length ? (
-        <p className="error" id="errores" role="alert">
-          {messages.join(" ")}
-        </p>
+      {visibleMessages.length ? (
+        <ul className="errors" id="errores" role="alert">
+          {visibleMessages.map((message, index) => <li key={`${index}-${message}`}>{message}</li>)}
+          {hiddenErrors > 0 ? <li>Y {formatInteger(hiddenErrors)} errores más.</li> : null}
+        </ul>
       ) : null}
       <label
         className="drop"
@@ -208,6 +226,60 @@ function InputScreen({
   );
 }
 
+function PreviewScreen({
+  name,
+  parsed,
+  extent,
+  onName,
+  onCorrect,
+  onProcess,
+}: {
+  name: string;
+  parsed: ParsedInput;
+  extent: ValueExtent;
+  onName: (value: string) => void;
+  onCorrect: () => void;
+  onProcess: () => void;
+}) {
+  const hiddenRows = Math.max(parsed.values.length - 5, 0);
+  return (
+    <section className="section">
+      <div className="field">
+        <label htmlFor="nombre">Nombre del conjunto</label>
+        <p className="hint">Aparece en los diagramas y en el PDF.</p>
+        <input
+          id="nombre"
+          className="text-input"
+          value={name}
+          autoComplete="off"
+          onChange={(event) => onName(event.target.value)}
+        />
+      </div>
+      <div className="summary preview-summary">
+        <article className="measure"><span>Total</span><strong>{formatInteger(parsed.values.length)}</strong></article>
+        <article className="measure"><span>Mínimo</span><strong>{formatBound(extent.minimum, extent.decimals)}</strong></article>
+        <article className="measure"><span>Máximo</span><strong>{formatBound(extent.maximum, extent.decimals)}</strong></article>
+      </div>
+      <div className="table-card">
+        <header>{hiddenRows > 0 ? "Primeras 5 filas" : "Filas"}</header>
+        {parsed.values.slice(0, 5).map((value, index) => (
+          <div className="preview-row" key={index}>
+            <span>Fila {index + 1}</span>
+            <strong>{formatBound(value.units / 10 ** value.decimals, value.decimals)}</strong>
+          </div>
+        ))}
+        {hiddenRows > 0 ? (
+          <p className="note preview-more">Se muestran 5 de {formatInteger(parsed.values.length)} filas.</p>
+        ) : null}
+      </div>
+      <div className="row-actions">
+        <button className="neutral" type="button" onClick={onCorrect}>Corregir datos</button>
+        <button className="primary" type="button" onClick={onProcess}>Procesar datos</button>
+      </div>
+    </section>
+  );
+}
+
 function Results({
   result,
   name,
@@ -218,6 +290,7 @@ function Results({
   onToggleAll,
   onChart,
   onToggleData,
+  onRestart,
 }: {
   result: Distribution;
   name: string;
@@ -228,6 +301,7 @@ function Results({
   onToggleAll: () => void;
   onChart: (kind: ChartKind) => void;
   onToggleData: (kind: ChartKind) => void;
+  onRestart: () => void;
 }) {
   const visible = showAll ? result.classes : result.classes.slice(0, 3);
   const measure = (id: string) => result.measures.find((item) => item.id === id);
@@ -340,35 +414,31 @@ function Results({
       </section>
       <section className="section">
         <h2>Diagramas</h2>
-        <div className="chart-switch">
+        <div className="chart-switch" role="group" aria-label="Tipo de diagrama">
           {(["pastel", "barras", "poligono", "ojiva"] as ChartKind[]).map((kind) => (
             <button key={kind} className="neutral" type="button" aria-pressed={chart === kind} onClick={() => onChart(kind)}>
               {chartLabel(kind)}
             </button>
           ))}
         </div>
-        <div className="chart-grid">
-          <ChartCard kind="pastel" active={chart === "pastel"} name={name} result={result} open={openData === "pastel"} onToggle={() => onToggleData("pastel")} />
-          <ChartCard kind="barras" active={chart === "barras"} name={name} result={result} open={openData === "barras"} onToggle={() => onToggleData("barras")} />
-          <ChartCard kind="poligono" active={chart === "poligono"} name={name} result={result} open={openData === "poligono"} onToggle={() => onToggleData("poligono")} />
-          <ChartCard kind="ojiva" active={chart === "ojiva"} name={name} result={result} open={openData === "ojiva"} onToggle={() => onToggleData("ojiva")} />
-        </div>
+        <ChartCard kind={chart} name={name} result={result} open={openData === chart} onToggle={() => onToggleData(chart)} />
       </section>
-      <button className="primary pdf-action" type="button" onClick={() => downloadPdf(result, name)}>Generar PDF</button>
+      <div className="action-bar">
+        <button className="neutral" type="button" onClick={onRestart}>Nuevo cálculo</button>
+        <button className="primary" type="button" onClick={() => downloadPdf(result, name)}>Generar PDF</button>
+      </div>
     </>
   );
 }
 
 function ChartCard({
   kind,
-  active,
   name,
   result,
   open,
   onToggle,
 }: {
   kind: ChartKind;
-  active: boolean;
   name: string;
   result: Distribution;
   open: boolean;
@@ -376,7 +446,7 @@ function ChartCard({
 }) {
   const rows = chartDataRows(result, kind);
   return (
-    <article className={active ? "chart-card active" : "chart-card"}>
+    <article className="chart-card">
       <h3>Diagrama de {chartLabel(kind).toLowerCase()}</h3>
       {kind === "pastel" ? <PieChart result={result} title={name} /> : null}
       {kind === "barras" ? <BarChart result={result} title={name} /> : null}
@@ -440,8 +510,33 @@ function blockReason(parsed: ParsedInput): string | null {
 function errorMessages(parsed: ParsedInput, blocked: string | null): string[] {
   if (parsed.tooBig) return [parsed.tooBig];
   if (parsed.issues.length) return parsed.issues.map((issue) => `Error en la línea ${issue.line}: ${issue.message}`);
-  if (parsed.values.length > 0 && blocked) return [blocked];
+  if (parsed.values.length >= 2 && blocked) return [blocked];
   return [];
+}
+
+function countLabel(count: number): string {
+  if (count === 0) return "0 números. Hacen falta al menos 2.";
+  if (count === 1) return "1 número. Hace falta al menos 1 más.";
+  return `${formatInteger(count)} números válidos.`;
+}
+
+type ValueExtent = { minimum: number; maximum: number; decimals: number };
+
+function valueExtent(values: ParsedValue[]): ValueExtent | null {
+  if (values.length === 0) return null;
+  const decimals = datasetDecimals(values);
+  let minUnits = Infinity;
+  let maxUnits = -Infinity;
+  for (const value of values) {
+    const units = toUnits(value, decimals);
+    if (units < minUnits) minUnits = units;
+    if (units > maxUnits) maxUnits = units;
+  }
+  return {
+    minimum: unitsToNumber(minUnits, decimals),
+    maximum: unitsToNumber(maxUnits, decimals),
+    decimals,
+  };
 }
 
 function progressLabel(step: Step): string {
