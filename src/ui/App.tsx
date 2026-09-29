@@ -1,6 +1,6 @@
 import { distinctCount, type Distribution } from "../domain/calculate";
 import { EXAMPLE_NAME, exampleText } from "../domain/example";
-import { formatBound, formatInteger, formatMeasure, formatOutput } from "../domain/format";
+import { formatBound, formatInteger, formatLengthRaw, formatMark, formatMeasure, formatOutput, formatRelative } from "../domain/format";
 import {
   byteLength,
   datasetDecimals,
@@ -337,7 +337,7 @@ function Results({
         <details className="step" key={`longitud-${openSteps}`} open={openSteps}>
           <summary>Paso 2 · Longitud del intervalo (L)</summary>
           <div className="formula"><span>Fórmula</span><span>L = (dato mayor − dato menor) / k</span></div>
-          <div className="formula"><span>Resultado</span><span>L = {formatOutput(result.lengthRaw, Math.max(result.decimals + 3, 3))}</span></div>
+          <div className="formula"><span>Resultado</span><span>L = {formatLengthRaw(result.lengthRaw, result.decimals)}</span></div>
           <div className="formula"><span>Redondeado</span><span className="pill">L = {formatBound(result.length, result.decimals)}</span></div>
         </details>
         <details className="step" key={`intervalos-${openSteps}`} open={openSteps}>
@@ -385,9 +385,9 @@ function Results({
                 <td>{formatBound(row.upper, result.decimals)}</td>
                 <td>{formatInteger(row.fi)}</td>
                 <td>{formatInteger(row.Fi)}</td>
-                <td>{formatOutput(row.hi)}</td>
-                <td>{formatOutput(row.Hi)}</td>
-                <td>{formatOutput(row.mi)}</td>
+                <td>{formatRelative(row.hi)}</td>
+                <td>{formatRelative(row.Hi)}</td>
+                <td>{formatMark(row.mi, result.decimals)}</td>
               </tr>
             ))}
           </tbody>
@@ -399,10 +399,10 @@ function Results({
               <p>
                 <span>fi {formatInteger(row.fi)}</span>
                 <span>Fi {formatInteger(row.Fi)}</span>
-                <span>hi {formatOutput(row.hi)}</span>
-                <span>Hi {formatOutput(row.Hi)}</span>
+                <span>hi {formatRelative(row.hi)}</span>
+                <span>Hi {formatRelative(row.Hi)}</span>
               </p>
-              <p className="mi">Mi {formatOutput(row.mi)}</p>
+              <p className="mi">Mi {formatMark(row.mi, result.decimals)}</p>
             </article>
           ))}
           {result.classes.length > 3 ? (

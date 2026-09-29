@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculate, distinctCount, sturgesK } from "./calculate";
 import { EXAMPLE_NAME, EXAMPLE_VALUES, PRICE_VALUES } from "./example";
-import { formatMeasure, formatOutput } from "./format";
+import { formatLengthRaw, formatMark, formatMeasure, formatRelative } from "./format";
 import { parseInput } from "./parse";
 
 const UNITS_FI = [21, 20, 15, 13, 8, 10, 7, 6];
@@ -34,11 +34,13 @@ describe("RF20", () => {
       expect(measure(result, "q3")).toBeCloseTo(291.25, 10);
       expect(measure(result, "p90")).toBeCloseTo(375.5, 10);
       expect(measure(result, "mean")).toBeCloseTo(208.25, 10);
-      expect(formatOutput(result.classes[0].hi)).toBe("0,2100000");
-      expect(formatOutput(result.classes[0].mi)).toBe("84,0000000");
-      expect(formatMeasure(84.5, true, 0)).toBe("84,5000000");
-      expect(formatMeasure(208.25, true, 0)).toBe("208,2500000");
+      expect(formatRelative(result.classes[0].hi)).toBe("0,2100");
+      expect(formatRelative(result.classes[7].Hi)).toBe("1,0000");
+      expect(formatMark(result.classes[0].mi, result.decimals)).toBe("84");
+      expect(formatMeasure(84.5, true, 0)).toBe("84,5");
+      expect(formatMeasure(208.25, true, 0)).toBe("208,25");
       expect(formatMeasure(60, false, 0)).toBe("60");
+      expect(formatLengthRaw(result.lengthRaw, result.decimals)).toBe("48,750");
     }
   });
 
@@ -68,6 +70,11 @@ describe("RF20", () => {
       expect(measure(result, "q3")).toBeCloseTo(49.85, 10);
       expect(measure(result, "p90")).toBeCloseTo(60.6, 10);
       expect(measure(result, "mean")).toBeCloseTo(41.537, 10);
+      expect(formatRelative(result.classes[0].hi)).toBe("0,1700");
+      expect(formatMark(result.classes[0].mi, result.decimals)).toBe("22,55");
+      expect(formatMeasure(measure(result, "p10"), true, result.decimals)).toBe("23,86");
+      expect(formatMeasure(measure(result, "mean"), true, result.decimals)).toBe("41,537");
+      expect(formatLengthRaw(result.lengthRaw, result.decimals)).toBe("7,0250");
     }
   });
 
