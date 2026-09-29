@@ -16,6 +16,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import type { Distribution, FrequencyClass } from "../domain/calculate";
 import { formatBound, formatMark, formatRelative } from "../domain/format";
+import { BRAND, INK, LINE, MUTED, SURFACE, classColor } from "./palette";
 
 ChartJS.register(
   ArcElement,
@@ -30,8 +31,8 @@ ChartJS.register(
   ChartDataLabels,
 );
 
-const SLICE_COLORS = ["#5B9BD5", "#C0504D", "#9BBB59", "#8064A2", "#4BACC6", "#F79646", "#1F4E79", "#833C0C"];
-const SERIES = "#5B9BD5";
+const SERIES = BRAND;
+const FONT = 'Outfit, "Segoe UI", sans-serif';
 
 type ChartProps = { result: Distribution; title: string };
 type ChartKind = "pastel" | "barras" | "poligono" | "ojiva";
@@ -96,14 +97,14 @@ function configuration(result: Distribution, title: string, kind: ChartKind): Ch
 function pieData(result: Distribution) {
   return {
     labels: result.classes.map((row) => String(row.ci)),
-    datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: result.classes.map((_, index) => sliceColor(index)), borderWidth: 1, borderColor: "#ffffff" }],
+    datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: result.classes.map((_, index) => classColor(index)), borderWidth: 2, borderColor: SURFACE }],
   };
 }
 
 function barData(result: Distribution) {
   return {
     labels: result.classes.map((row) => formatMark(row.mi, result.decimals)),
-    datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: SERIES, borderWidth: 0 }],
+    datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: result.classes.map((_, index) => classColor(index)), borderWidth: 0 }],
   };
 }
 
@@ -126,25 +127,37 @@ function lineData(result: Distribution, kind: "poligono" | "ojiva") {
 
 function pieOptions(title: string) {
   return {
+    responsive: true,
+    maintainAspectRatio: false,
     animation: motion ? false as const : undefined,
     plugins: {
       title: titlePlugin(title),
-      legend: { position: "right" as const, labels: { boxWidth: 14, color: "#595959", font: { size: 13 } } },
+      legend: {
+        position: window.matchMedia("(max-width: 800px)").matches ? "bottom" as const : "right" as const,
+        labels: { boxWidth: 14, color: MUTED, font: { family: FONT, size: 13 } },
+      },
       datalabels: {
-        color: "#ffffff",
-        backgroundColor: "#3a3a3a",
-        borderRadius: 2,
+        color: SURFACE,
+        backgroundColor: INK,
+        borderRadius: 4,
         padding: 4,
-        font: { weight: "bold" as const, size: 11 },
+        font: { family: FONT, weight: "bold" as const, size: 11 },
         formatter: (value: number) => percent(value),
       },
-      tooltip: { callbacks: { label: (item: { raw: unknown }) => percent(Number(item.raw)) } },
+      tooltip: {
+        backgroundColor: INK,
+        titleColor: SURFACE,
+        bodyColor: SURFACE,
+        callbacks: { label: (item: { raw: unknown }) => percent(Number(item.raw)) },
+      },
     },
   };
 }
 
 function barOptions(title: string) {
   return {
+    responsive: true,
+    maintainAspectRatio: false,
     animation: motion ? false as const : undefined,
     layout: { padding: { top: 24 } },
     plugins: {
@@ -153,14 +166,19 @@ function barOptions(title: string) {
       datalabels: {
         anchor: "end" as const,
         align: "end" as const,
-        color: "#404040",
-        font: { weight: "bold" as const, size: 12 },
+        color: INK,
+        font: { family: FONT, weight: "bold" as const, size: 12 },
         formatter: (value: number) => percent(value),
       },
-      tooltip: { callbacks: { label: (item: { raw: unknown }) => percent(Number(item.raw)) } },
+      tooltip: {
+        backgroundColor: INK,
+        titleColor: SURFACE,
+        bodyColor: SURFACE,
+        callbacks: { label: (item: { raw: unknown }) => percent(Number(item.raw)) },
+      },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: "#595959" } },
+      x: { grid: { display: false }, ticks: { color: MUTED, font: { family: FONT, size: 12 } } },
       y: { display: false, grace: "15%" },
     },
   };
@@ -171,6 +189,8 @@ function lineOptions(title: string, kind: "poligono" | "ojiva", result: Distribu
   const max = kind === "ojiva" ? Math.max(1.2, Math.max(...values)) : niceMax(Math.max(...values));
   const step = kind === "ojiva" ? 0.2 : 0.05;
   return {
+    responsive: true,
+    maintainAspectRatio: false,
     animation: motion ? false as const : undefined,
     parsing: false as const,
     plugins: {
@@ -181,26 +201,37 @@ function lineOptions(title: string, kind: "poligono" | "ojiva", result: Distribu
         anchor: "end" as const,
         clamp: true,
         display: "auto" as const,
-        color: "#404040",
-        font: { size: 11 },
+        color: INK,
+        font: { family: FONT, size: 11 },
         formatter: (value: { y: number }) => percent(value.y),
       },
-      tooltip: { callbacks: { label: (item: { raw: unknown }) => percent((item.raw as { y: number }).y) } },
+      tooltip: {
+        backgroundColor: INK,
+        titleColor: SURFACE,
+        bodyColor: SURFACE,
+        callbacks: { label: (item: { raw: unknown }) => percent((item.raw as { y: number }).y) },
+      },
     },
     scales: {
       x: {
         type: "linear" as const,
-        grid: { color: "#d9d9d9" },
+        grid: { color: LINE },
         ticks: {
-          color: "#595959",
+          color: MUTED,
+          font: { family: FONT, size: 12 },
           callback: (value: string | number) => formatMark(Number(value), result.decimals),
         },
       },
       y: {
         min: 0,
         max,
-        grid: { color: "#d9d9d9" },
-        ticks: { color: "#595959", stepSize: step, callback: (value: string | number) => percent(Number(value)) },
+        grid: { color: LINE },
+        ticks: {
+          color: MUTED,
+          font: { family: FONT, size: 12 },
+          stepSize: step,
+          callback: (value: string | number) => percent(Number(value)),
+        },
       },
     },
   };
@@ -210,14 +241,10 @@ function titlePlugin(title: string) {
   return {
     display: title.length > 0,
     text: title,
-    color: "#595959",
-    font: { size: title.length > 40 ? 16 : 22, weight: "normal" as const },
+    color: INK,
+    font: { family: FONT, size: title.length > 40 ? 16 : 22, weight: "normal" as const },
     padding: { bottom: 12 },
   };
-}
-
-function sliceColor(index: number): string {
-  return SLICE_COLORS[index % SLICE_COLORS.length];
 }
 
 function percent(value: number): string {
