@@ -330,7 +330,6 @@ function Results({
         <h2 className="only-mobile">Cómo se calculó</h2>
         <details className="step" key={`sturges-${openSteps}`} open={openSteps}>
           <summary>Paso 1 · Teorema de Sturges — número de clases (k)<Help text={HELP.paso1} label="Ayuda: teorema de Sturges" /></summary>
-          <p className="note">El teorema de Sturges indica cuántos intervalos usar según el total de datos.</p>
           <div className="formula"><span>Fórmula</span><span>k = 1 + 3,322 × log10(n)</span></div>
           <div className="formula"><span>Con los valores</span><span>k = 1 + 3,322 × log10({formatInteger(result.n)})</span></div>
           <div className="formula"><span>Resultado</span><span>k = {formatOutput(result.rawK, 3)}</span></div>
