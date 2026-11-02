@@ -50,7 +50,7 @@ export function PieChart({ result, title }: ChartProps) {
 export function BarChart({ result, title }: ChartProps) {
   return (
     <div className="chart-canvas" role="img" aria-label={alt(title, "barras", result)}>
-      <Bar data={barData(result)} options={barOptions(title)} />
+      <Bar data={barData(result)} options={barOptions(title, result)} />
     </div>
   );
 }
@@ -90,13 +90,13 @@ export function renderChartImage(result: Distribution, title: string, kind: Char
 
 function configuration(result: Distribution, title: string, kind: ChartKind): ChartConfiguration {
   if (kind === "pastel") return { type: "pie", data: pieData(result), options: pieOptions(title) };
-  if (kind === "barras") return { type: "bar", data: barData(result), options: barOptions(title) };
+  if (kind === "barras") return { type: "bar", data: barData(result), options: barOptions(title, result) };
   return { type: "line", data: lineData(result, kind), options: lineOptions(title, kind, result) };
 }
 
 function pieData(result: Distribution) {
   return {
-    labels: result.classes.map((row) => String(row.ci)),
+    labels: result.classes.map((row) => intervalLabel(row, result.decimals)),
     datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: result.classes.map((_, index) => classColor(index)), borderWidth: 2, borderColor: SURFACE }],
   };
 }
@@ -104,7 +104,7 @@ function pieData(result: Distribution) {
 function barData(result: Distribution) {
   return {
     labels: result.classes.map((row) => formatMark(row.mi, result.decimals)),
-    datasets: [{ data: result.classes.map((row) => row.hi), backgroundColor: result.classes.map((_, index) => classColor(index)), borderWidth: 0 }],
+    datasets: [{ label: "Frecuencia relativa (hi)", data: result.classes.map((row) => row.hi), backgroundColor: result.classes.map((_, index) => classColor(index)), borderWidth: 0 }],
   };
 }
 
@@ -114,6 +114,7 @@ function lineData(result: Distribution, kind: "poligono" | "ojiva") {
     ? [{ x: first.mi - result.length, y: 0 }, ...result.classes.map((row) => ({ x: row.mi, y: row.hi }))]
     : result.classes.map((row) => ({ x: row.mi, y: row.Hi }));
   const dataset: ChartDataset<"line", { x: number; y: number }[]> = {
+    label: kind === "poligono" ? "Frecuencia relativa" : "Frecuencia relativa acumulada",
     data: points,
     borderColor: SERIES,
     backgroundColor: SERIES,
@@ -133,8 +134,9 @@ function pieOptions(title: string) {
     plugins: {
       title: titlePlugin(title),
       legend: {
-        position: window.matchMedia("(max-width: 800px)").matches ? "bottom" as const : "right" as const,
-        labels: { boxWidth: 14, color: MUTED, font: { family: FONT, size: 13 } },
+        position: "bottom" as const,
+        labels: { boxWidth: 14, padding: 12, color: MUTED, font: { family: FONT, size: 13 } },
+        title: { display: true, text: "Rango de valores", color: MUTED, font: { family: FONT, size: 13, weight: "bold" as const }, padding: 6 },
       },
       datalabels: {
         color: SURFACE,
@@ -154,7 +156,7 @@ function pieOptions(title: string) {
   };
 }
 
-function barOptions(title: string) {
+function barOptions(title: string, result: Distribution) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -162,7 +164,22 @@ function barOptions(title: string) {
     layout: { padding: { top: 24 } },
     plugins: {
       title: titlePlugin(title),
-      legend: { display: false },
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          boxWidth: 14,
+          padding: 12,
+          color: MUTED,
+          font: { family: FONT, size: 13 },
+          generateLabels: () => result.classes.map((row, index) => ({
+            text: intervalLabel(row, result.decimals),
+            fillStyle: classColor(index),
+            strokeStyle: classColor(index),
+            lineWidth: 0,
+          })),
+        },
+        title: { display: true, text: "Rango de valores", color: MUTED, font: { family: FONT, size: 13, weight: "bold" as const }, padding: 6 },
+      },
       datalabels: {
         anchor: "end" as const,
         align: "end" as const,
@@ -216,6 +233,7 @@ function lineOptions(title: string, kind: "poligono" | "ojiva", result: Distribu
       x: {
         type: "linear" as const,
         grid: { color: LINE },
+        title: { display: true, text: title || "Valores", color: MUTED, font: { family: FONT, size: 12 } },
         ticks: {
           color: MUTED,
           font: { family: FONT, size: 12 },
@@ -226,6 +244,7 @@ function lineOptions(title: string, kind: "poligono" | "ojiva", result: Distribu
         min: 0,
         max,
         grid: { color: LINE },
+        title: { display: true, text: kind === "poligono" ? "Frecuencia relativa" : "Frecuencia relativa acumulada", color: MUTED, font: { family: FONT, size: 12 } },
         ticks: {
           color: MUTED,
           font: { family: FONT, size: 12 },
