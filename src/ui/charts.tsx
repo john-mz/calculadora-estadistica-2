@@ -16,7 +16,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import type { Distribution, FrequencyClass } from "../domain/calculate";
 import { formatBound, formatMark, formatRelative } from "../domain/format";
-import { BRAND, INK, LINE, MUTED, SURFACE, classColor } from "./palette";
+import { INK, LINE, MUTED, SURFACE, classColor } from "./palette";
 
 ChartJS.register(
   ArcElement,
@@ -31,7 +31,6 @@ ChartJS.register(
   ChartDataLabels,
 );
 
-const SERIES = BRAND;
 const FONT = 'Outfit, "Segoe UI", sans-serif';
 
 type ChartProps = { result: Distribution; title: string };
@@ -113,14 +112,20 @@ function lineData(result: Distribution, kind: "poligono" | "ojiva") {
   const points = kind === "poligono"
     ? [{ x: first.mi - result.length, y: 0 }, ...result.classes.map((row) => ({ x: row.mi, y: row.hi }))]
     : result.classes.map((row) => ({ x: row.mi, y: row.Hi }));
+  // El punto extra en 0 del polígono toma el color de la primera clase.
+  const offset = kind === "poligono" ? 1 : 0;
+  const colors = points.map((_, index) => classColor(Math.max(0, index - offset)));
   const dataset: ChartDataset<"line", { x: number; y: number }[]> = {
     data: points,
-    borderColor: SERIES,
-    backgroundColor: SERIES,
-    pointRadius: 4,
-    pointHoverRadius: 5,
+    borderColor: INK,
+    backgroundColor: colors,
+    pointBackgroundColor: colors,
+    pointBorderColor: INK,
+    pointBorderWidth: 1.5,
+    pointRadius: 5,
+    pointHoverRadius: 6,
     tension: 0,
-    borderWidth: 2,
+    borderWidth: 2.5,
   };
   return { datasets: [dataset] };
 }
