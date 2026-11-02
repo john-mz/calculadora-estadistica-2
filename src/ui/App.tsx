@@ -13,6 +13,7 @@ import {
 import { MAX_BYTES } from "../domain/limits";
 import indicador from "../assets/indicador.svg";
 import { BarChart, chartDataRows, OgiveChart, PieChart, PolygonChart } from "./charts";
+import Help, { HELP } from "./Help";
 import { downloadPdf } from "./pdf";
 import { loadSession, saveSession } from "./session";
 import { useEffect, useMemo, useState } from "react";
@@ -177,7 +178,7 @@ function InputScreen({
   return (
     <>
       <div className="field">
-        <label htmlFor="datos">Datos numéricos</label>
+        <label htmlFor="datos">Datos numéricos<Help text={HELP.datos} label="Ayuda: datos numéricos" /></label>
         <p className="hint">Un número por línea. Para decimales, usa coma: 187,5</p>
         <textarea
           id="datos"
@@ -207,6 +208,7 @@ function InputScreen({
         <FileIcon />
         <strong>Arrastra aquí un CSV o selecciónalo</strong>
         <span>Una sola columna · separado por punto y coma · máximo 5 MB</span>
+        <span className="drop-help">¿Qué es un CSV?<Help text={HELP.csv} label="Ayuda: qué es un CSV" /></span>
         <input
           className="file-input"
           type="file"
@@ -245,7 +247,7 @@ function PreviewScreen({
   return (
     <section className="section">
       <div className="field">
-        <label htmlFor="nombre">Nombre del conjunto</label>
+        <label htmlFor="nombre">Nombre del conjunto<Help text={HELP.nombre} label="Ayuda: nombre del conjunto" /></label>
         <p className="hint">Aparece en los diagramas y en el PDF.</p>
         <input
           id="nombre"
@@ -256,9 +258,9 @@ function PreviewScreen({
         />
       </div>
       <div className="summary preview-summary">
-        <article className="measure"><span>Total</span><strong>{formatInteger(parsed.values.length)}</strong></article>
-        <article className="measure"><span>Mínimo</span><strong>{formatBound(extent.minimum, extent.decimals)}</strong></article>
-        <article className="measure"><span>Máximo</span><strong>{formatBound(extent.maximum, extent.decimals)}</strong></article>
+        <article className="measure"><span>Total<Help text={HELP.total} label="Ayuda: total" /></span><strong>{formatInteger(parsed.values.length)}</strong></article>
+        <article className="measure"><span>Mínimo<Help text={HELP.minimo} label="Ayuda: mínimo" /></span><strong>{formatBound(extent.minimum, extent.decimals)}</strong></article>
+        <article className="measure"><span>Máximo<Help text={HELP.maximo} label="Ayuda: máximo" /></span><strong>{formatBound(extent.maximum, extent.decimals)}</strong></article>
       </div>
       <div className="table-card">
         <header>{hiddenRows > 0 ? "Primeras 5 filas" : "Filas"}</header>
@@ -306,20 +308,20 @@ function Results({
   const visible = showAll ? result.classes : result.classes.slice(0, 3);
   const measure = (id: string) => result.measures.find((item) => item.id === id);
   const cards = [
-    ["N", formatInteger(result.n)],
-    ["Mínimo", formatMeasure(result.minimum, false, result.decimals)],
-    ["Máximo", formatMeasure(result.maximum, false, result.decimals)],
-    ["Mediana", formatMeasure(measure("median")?.value ?? 0, measure("median")?.interpolated ?? true, result.decimals)],
-    ["Media", formatMeasure(measure("mean")?.value ?? 0, true, result.decimals)],
+    ["N", formatInteger(result.n), HELP.total],
+    ["Mínimo", formatMeasure(result.minimum, false, result.decimals), HELP.minimo],
+    ["Máximo", formatMeasure(result.maximum, false, result.decimals), HELP.maximo],
+    ["Mediana", formatMeasure(measure("median")?.value ?? 0, measure("median")?.interpolated ?? true, result.decimals), HELP.mediana],
+    ["Media", formatMeasure(measure("mean")?.value ?? 0, true, result.decimals), HELP.media],
   ];
   return (
     <>
       <section className="section">
-        <h2 className="only-desktop">Medidas de posición</h2>
-        <h2 className="only-mobile">Resumen principal</h2>
+        <h2 className="only-desktop">Medidas de posición<Help text={HELP.medidas} label="Ayuda: medidas de posición" /></h2>
+        <h2 className="only-mobile">Resumen principal<Help text={HELP.medidas} label="Ayuda: resumen principal" /></h2>
         <div className="summary">
-          {cards.map(([label, value]) => (
-            <article className="measure" key={label}><span>{label}</span><strong>{value}</strong></article>
+          {cards.map(([label, value, help]) => (
+            <article className="measure" key={label}><span>{label}<Help text={help} label={`Ayuda: ${label}`} /></span><strong>{value}</strong></article>
           ))}
         </div>
       </section>
@@ -327,21 +329,20 @@ function Results({
         <h2 className="only-desktop">Cálculo paso a paso</h2>
         <h2 className="only-mobile">Cómo se calculó</h2>
         <details className="step" key={`sturges-${openSteps}`} open={openSteps}>
-          <summary>Paso 1 · Teorema de Sturges — número de clases (k)</summary>
-          <p className="note">El teorema de Sturges indica cuántos intervalos usar según el total de datos.</p>
+          <summary>Paso 1 · Teorema de Sturges — número de clases (k)<Help text={HELP.paso1} label="Ayuda: teorema de Sturges" /></summary>
           <div className="formula"><span>Fórmula</span><span>k = 1 + 3,322 × log10(n)</span></div>
           <div className="formula"><span>Con los valores</span><span>k = 1 + 3,322 × log10({formatInteger(result.n)})</span></div>
           <div className="formula"><span>Resultado</span><span>k = {formatOutput(result.rawK, 3)}</span></div>
           <div className="formula"><span>Redondeado al techo</span><span className="pill">k = {result.kSturges} intervalos</span></div>
         </details>
         <details className="step" key={`longitud-${openSteps}`} open={openSteps}>
-          <summary>Paso 2 · Longitud del intervalo (L)</summary>
+          <summary>Paso 2 · Longitud del intervalo (L)<Help text={HELP.paso2} label="Ayuda: longitud del intervalo" /></summary>
           <div className="formula"><span>Fórmula</span><span>L = (dato mayor − dato menor) / k</span></div>
           <div className="formula"><span>Resultado</span><span>L = {formatLengthRaw(result.lengthRaw, result.decimals)}</span></div>
           <div className="formula"><span>Redondeado</span><span className="pill">L = {formatBound(result.length, result.decimals)}</span></div>
         </details>
         <details className="step" key={`intervalos-${openSteps}`} open={openSteps}>
-          <summary>Paso 3 · Cantidad de intervalos</summary>
+          <summary>Paso 3 · Cantidad de intervalos<Help text={HELP.paso3} label="Ayuda: cantidad de intervalos" /></summary>
           <table className="data-table">
             <thead><tr><th>Intervalo</th><th>Límite inferior</th><th>Límite superior</th></tr></thead>
             <tbody>
@@ -357,7 +358,7 @@ function Results({
           <p className="note">Si el número máximo no aparece en el intervalo número k, se agrega otro intervalo.</p>
         </details>
         <details className="step" key={`medidas-${openSteps}`} open={openSteps}>
-          <summary>Paso 4 · Medidas de posición y percentiles</summary>
+          <summary>Paso 4 · Medidas de posición y percentiles<Help text={HELP.paso4} label="Ayuda: percentiles" /></summary>
           <table className="data-table">
             <thead><tr><th>Medida</th><th>Valor</th></tr></thead>
             <tbody>
@@ -372,7 +373,7 @@ function Results({
         </details>
       </section>
       <section className="section">
-        <h2>Frecuencias</h2>
+        <h2>Frecuencias<Help text={HELP.frecuencias} label="Ayuda: tabla de frecuencias" /></h2>
         <table className="data-table desktop-table">
           <thead>
             <tr><th>Ci</th><th>menor</th><th>mayor</th><th>fi</th><th>Fi</th><th>hi</th><th>Hi</th><th>Mi</th></tr>
@@ -413,7 +414,7 @@ function Results({
         </div>
       </section>
       <section className="section">
-        <h2>Diagramas</h2>
+        <h2>Diagramas<Help text={HELP.diagramas} label="Ayuda: diagramas" /></h2>
         <div className="chart-switch" role="group" aria-label="Tipo de diagrama">
           {(["pastel", "barras", "poligono", "ojiva"] as ChartKind[]).map((kind) => (
             <button key={kind} className="neutral" type="button" aria-pressed={chart === kind} onClick={() => onChart(kind)}>
@@ -447,7 +448,7 @@ function ChartCard({
   const rows = chartDataRows(result, kind);
   return (
     <article className="chart-card">
-      <h3>Diagrama de {chartLabel(kind).toLowerCase()}</h3>
+      <h3>Diagrama de {chartLabel(kind).toLowerCase()}<Help text={HELP[kind]} label={`Ayuda: diagrama de ${chartLabel(kind).toLowerCase()}`} /></h3>
       {kind === "pastel" ? <PieChart result={result} title={name} /> : null}
       {kind === "barras" ? <BarChart result={result} title={name} /> : null}
       {kind === "poligono" ? <PolygonChart result={result} title={name} /> : null}
