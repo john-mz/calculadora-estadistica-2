@@ -15,8 +15,9 @@ import {
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import type { Distribution, FrequencyClass } from "../domain/calculate";
-import { formatBound, formatMark, formatRelative } from "../domain/format";
-import { INK, LINE, MUTED, SURFACE, classColor } from "./palette";
+import { formatBound, formatCoefficient, formatDecimal, formatMark, formatRelative } from "../domain/format";
+import { predict, type RegressionModel } from "../domain/regression";
+import { ACCENT, BRAND, INK, LINE, MUTED, SURFACE, classColor } from "./palette";
 
 ChartJS.register(
   ArcElement,
@@ -288,6 +289,110 @@ function intervalLabel(row: FrequencyClass, decimals: number): string {
 function alt(title: string, kind: string, result: Distribution): string {
   const name = title ? `${title}. ` : "";
   return `${name}Diagrama de ${kind}. Los valores están en la tabla de frecuencias, ${result.k} intervalos.`;
+}
+
+/** Más puntos que esto vuelven lento el lienzo; se muestra una muestra uniforme. */
+const MAX_SCATTER = 1500;
+const CURVE_STEPS = 120;
+
+export function RegressionChart({ values, model, title }: { values: number[]; model: RegressionModel; title: string }) {
+  return (
+    <div className="chart-canvas" role="img" aria-label={`${title ? `${title}. ` : ""}Diagrama de dispersión con el modelo ${model.label.toLowerCase()}.`}>
+      <Line data={regressionData(values, model)} options={regressionOptions(title, values.length)} />
+    </div>
+  );
+}
+
+export function renderRegressionImage(values: number[], model: RegressionModel, title: string): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 640;
+  const chart = new ChartJS(canvas, {
+    type: "line",
+    data: regressionData(values, model),
+    options: { ...regressionOptions(title, values.length), responsive: false, animation: false, devicePixelRatio: 1 },
+  });
+  const url = chart.toBase64Image("image/png", 1);
+  chart.destroy();
+  return url;
+}
+
+function regressionData(values: number[], model: RegressionModel) {
+  const stride = Math.max(1, Math.ceil(values.length / MAX_SCATTER));
+  const points: { x: number; y: number }[] = [];
+  for (let index = 0; index < values.length; index += stride) points.push({ x: index + 1, y: values[index] });
+  const n = values.length;
+  const curve = Array.from({ length: CURVE_STEPS + 1 }, (_, step) => {
+    const x = 1 + ((n - 1) * step) / CURVE_STEPS;
+    return { x, y: predict(model, x) };
+  });
+  const datasets: ChartDataset<"line", { x: number; y: number }[]>[] = [
+    {
+      label: "Datos",
+      data: points,
+      showLine: false,
+      pointRadius: points.length > 300 ? 2 : 4,
+      pointHoverRadius: 5,
+      pointBackgroundColor: `${BRAND}99`,
+      pointBorderColor: BRAND,
+      pointBorderWidth: 1,
+      backgroundColor: BRAND,
+      borderColor: BRAND,
+    },
+    {
+      label: `Modelo ${model.label.toLowerCase()}`,
+      data: curve,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      borderColor: ACCENT,
+      backgroundColor: ACCENT,
+      borderWidth: 3,
+      tension: 0,
+    },
+  ];
+  return { datasets };
+}
+
+function regressionOptions(title: string, n: number) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: motion ? false as const : undefined,
+    parsing: false as const,
+    interaction: { mode: "nearest" as const, intersect: false },
+    plugins: {
+      title: titlePlugin(title),
+      datalabels: { display: false },
+      legend: {
+        position: "bottom" as const,
+        labels: { boxWidth: 14, padding: 12, color: MUTED, font: { family: FONT, size: 13 } },
+      },
+      tooltip: {
+        backgroundColor: INK,
+        titleColor: SURFACE,
+        bodyColor: SURFACE,
+        callbacks: {
+          title: (items: { raw: unknown }[]) => `Posición ${formatDecimal((items[0].raw as { x: number }).x, 1, true)}`,
+          label: (item: { raw: unknown; dataset: { label?: string } }) => `${item.dataset.label}: ${formatCoefficient((item.raw as { y: number }).y)}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: "linear" as const,
+        min: 1,
+        max: Math.max(2, n),
+        grid: { color: LINE },
+        title: { display: true, text: "X · posición del dato", color: MUTED, font: { family: FONT, size: 12 } },
+        ticks: { color: MUTED, font: { family: FONT, size: 12 }, callback: (value: string | number) => formatDecimal(Number(value), 0) },
+      },
+      y: {
+        grid: { color: LINE },
+        title: { display: true, text: title ? `Y · ${title}` : "Y · valor", color: MUTED, font: { family: FONT, size: 12 } },
+        ticks: { color: MUTED, font: { family: FONT, size: 12 }, callback: (value: string | number) => formatCoefficient(Number(value)) },
+      },
+    },
+  };
 }
 
 export function chartDataRows(result: Distribution, kind: ChartKind) {

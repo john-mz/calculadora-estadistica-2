@@ -1,16 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { calculate, distinctCount, sturgesK } from "./calculate";
-import { EXAMPLE_NAME, EXAMPLE_VALUES, PRICE_VALUES } from "./example";
+import { EXAMPLE_NAME, PRICE_VALUES } from "./example";
 import { formatLengthRaw, formatMark, formatMeasure, formatRelative } from "./format";
 import { parseInput } from "./parse";
+
+/** Conjunto de referencia original de unidades vendidas (antes era el ejemplo de la app). */
+const UNITS_VALUES = [
+  150, 80, 210, 95, 340, 120, 450, 60, 175, 230, 110, 290, 140, 310, 75, 190, 420, 130, 260, 85,
+  380, 160, 220, 100, 300, 145, 70, 205, 350, 115, 410, 90, 185, 240, 125, 275, 65, 330, 155, 215,
+  105, 390, 135, 250, 80, 320, 170, 200, 440, 95, 165, 235, 110, 285, 75, 315, 140, 205, 375, 125,
+  430, 85, 190, 260, 100, 345, 150, 225, 70, 295, 120, 360, 180, 210, 90, 400, 130, 245, 105, 325,
+  160, 220, 65, 280, 115, 355, 175, 200, 450, 95, 145, 230, 110, 305, 80, 335, 185, 215, 125, 395,
+];
 
 const UNITS_FI = [21, 20, 15, 13, 8, 10, 7, 6];
 const PRICE_FI = [17, 14, 17, 18, 17, 7, 4, 5, 1];
 
 describe("RF20", () => {
   it("calcula unidades vendidas con encabezado y sin él", () => {
-    const withHeader = parseInput(["Unidades Vendidas", ...EXAMPLE_VALUES].join("\n"));
-    const withoutHeader = parseInput(EXAMPLE_VALUES.join("\n"));
+    const withHeader = parseInput(["Unidades Vendidas", ...UNITS_VALUES].join("\n"));
+    const withoutHeader = parseInput(UNITS_VALUES.join("\n"));
 
     expect(withHeader.name).toBe("Unidades Vendidas");
     expect(withHeader.issues).toEqual([]);
