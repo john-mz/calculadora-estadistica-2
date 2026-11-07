@@ -22,6 +22,11 @@ export const HELP = {
   pastel: "Cada porción es un intervalo; cuanto más grande, mayor es el porcentaje de datos que contiene.",
   barras: "La altura de cada barra indica cuántos datos (fi) hay en cada intervalo.",
   poligono: "Une con una línea los puntos medios de las barras. Sirve para ver la forma de la distribución: dónde se concentran los datos.",
+  regresion: "Busca la fórmula que mejor describe cómo cambian tus datos según el orden en que los escribiste. X es la posición del dato (1, 2, 3…) e Y es su valor. Se prueban cinco modelos y se elige el que mejor se ajusta.",
+  modelo: "Es la forma de la curva que mejor sigue a los datos: recta (lineal), crecimiento acelerado (exponencial), crecimiento que se frena (logarítmico), potencia (potencial) o una curva con un pico o un valle (polinómico).",
+  r2: "R² (coeficiente de determinación) va de 0 a 1 e indica qué parte de la variación de los datos explica el modelo. 1 es un ajuste perfecto; cerca de 0 significa que el modelo casi no explica nada. Aquí se mide sobre los valores originales para comparar todos los modelos en la misma escala; por eso puede salir negativo cuando un modelo ajusta peor que simplemente usar el promedio.",
+  r2ajustado: "Es R² con una pequeña penalización por cada coeficiente extra. Así el polinómico, que tiene tres coeficientes, no gana solo por ser más flexible. El modelo identificado es el de mayor R² ajustado.",
+  correlacion: "r de Pearson mide si los valores tienden a subir (r positivo) o a bajar (r negativo) a medida que avanza el orden. Va de −1 a 1.",
   ojiva: "Muestra cuántos datos se acumulan al avanzar de intervalo en intervalo. Siempre sube, hasta llegar al total.",
 } as const;
 

@@ -4,6 +4,7 @@ import {
   unitsToNumber,
   type ParsedValue,
 } from "./parse";
+import { fitRegression, type Regression } from "./regression";
 
 export type FrequencyClass = {
   ci: number;
@@ -36,6 +37,7 @@ export type Distribution = {
   minimum: number;
   maximum: number;
   values: number[];
+  regression: Regression;
 };
 
 export function sturgesRaw(n: number): number {
@@ -137,6 +139,7 @@ export function calculate(values: ParsedValue[]): Distribution {
     minimum,
     maximum,
     values: numbers,
+    regression: fitRegression(numbers),
   };
 }
 

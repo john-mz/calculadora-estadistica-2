@@ -247,6 +247,35 @@ textarea:focus-visible,
 .chart-switch button[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
 .chart-switch button[aria-pressed="true"]:hover { background: var(--brand-press); border-color: var(--brand-press); }
 
+.chart-card .model-switch { margin-bottom: 12px; }
+.equation {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.equation span { color: var(--muted); font-size: 14px; }
+.equation strong { font-size: 22px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.table-scroll { overflow-x: auto; }
+.regression-table td:nth-child(2), .regression-table th:nth-child(2) { text-align: left; }
+.regression-table td[colspan] { text-align: left; color: var(--muted); }
+.regression-table tr.best td { font-weight: 600; }
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .help { display: inline-flex; vertical-align: middle; margin-left: 6px; }
 
 .help-btn {
@@ -367,6 +396,10 @@ h2 { margin: 0; font-size: 22px; }
   .freq-card p { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 14px; }
   .chart-switch { flex-wrap: nowrap; }
   .chart-switch button { flex: 1; padding: 8px 4px; font-size: 13px; }
+  .chart-switch.model-switch { flex-wrap: wrap; }
+  .chart-switch.model-switch button { flex: 1 1 30%; }
+  .equation strong { font-size: 18px; }
+  .regression-table { min-width: 520px; }
   .chart-card { overflow: hidden; }
   .data-table { font-size: 13px; }
 }

@@ -1,6 +1,7 @@
 import { distinctCount, type Distribution } from "../domain/calculate";
 import { EXAMPLE_NAME, exampleText } from "../domain/example";
-import { formatBound, formatInteger, formatLengthRaw, formatMark, formatMeasure, formatOutput, formatRelative } from "../domain/format";
+import { formatBound, formatDecimal, formatEquation, formatInteger, formatLengthRaw, formatMark, formatMeasure, formatOutput, formatRelative } from "../domain/format";
+import { fitStrength, type ModelId, type RegressionModel } from "../domain/regression";
 import {
   byteLength,
   datasetDecimals,
@@ -12,7 +13,7 @@ import {
 } from "../domain/parse";
 import { MAX_BYTES } from "../domain/limits";
 import indicador from "../assets/indicador.svg";
-import { BarChart, chartDataRows, OgiveChart, PieChart, PolygonChart } from "./charts";
+import { BarChart, chartDataRows, OgiveChart, PieChart, PolygonChart, RegressionChart } from "./charts";
 import Help, { HELP } from "./Help";
 import { downloadPdf } from "./pdf";
 import { loadSession, saveSession } from "./session";
@@ -424,6 +425,7 @@ function Results({
         </div>
         <ChartCard kind={chart} name={name} result={result} open={openData === chart} onToggle={() => onToggleData(chart)} />
       </section>
+      <RegressionSection result={result} name={name} />
       <div className="action-bar">
         <button className="neutral" type="button" onClick={onRestart}>Nuevo cálculo</button>
         <button className="primary" type="button" onClick={() => downloadPdf(result, name)}>Generar PDF</button>
@@ -466,6 +468,78 @@ function ChartCard({
       ) : null}
     </article>
   );
+}
+
+function RegressionSection({ result, name }: { result: Distribution; name: string }) {
+  const { regression } = result;
+  const [selected, setSelected] = useState<ModelId | null>(regression.best);
+  const fitted = regression.models.filter((model): model is RegressionModel => model.applicable);
+  const best = fitted.find((model) => model.id === regression.best) ?? null;
+  const shown = fitted.find((model) => model.id === selected) ?? best;
+
+  return (
+    <section className="section">
+      <h2>Modelo de regresión<Help text={HELP.regresion} label="Ayuda: modelo de regresión" /></h2>
+      <p className="note">X = posición del dato en el orden en que lo ingresaste (1 a {formatInteger(regression.n)}) · Y = su valor.</p>
+      {!best || !shown ? (
+        <p className="note">Hacen falta al menos 3 datos para comparar modelos de regresión.</p>
+      ) : (
+        <>
+          <div className="summary regression-summary">
+            <article className="measure"><span>Modelo identificado<Help text={HELP.modelo} label="Ayuda: modelo identificado" /></span><strong>{best.label}</strong></article>
+            <article className="measure"><span>R²<Help text={HELP.r2} label="Ayuda: R²" /></span><strong>{formatOutput(best.r2)}</strong></article>
+            <article className="measure"><span>R² ajustado<Help text={HELP.r2ajustado} label="Ayuda: R² ajustado" /></span><strong>{formatOutput(best.adjustedR2)}</strong></article>
+            <article className="measure"><span>Ajuste<Help text={HELP.r2} label="Ayuda: fuerza del ajuste" /></span><strong>{fitStrength(best.r2)}</strong></article>
+            <article className="measure"><span>Correlación r<Help text={HELP.correlacion} label="Ayuda: correlación" /></span><strong>{formatOutput(regression.r)}</strong></article>
+          </div>
+          <p className="equation"><span>Ecuación del modelo {best.label.toLowerCase()}</span><strong>{formatEquation(best.id, best.coefficients)}</strong></p>
+          <p className="note">{interpretation(best, regression.r)}</p>
+          <article className="chart-card">
+            <h3>Dispersión y curva ajustada</h3>
+            <div className="chart-switch model-switch" role="group" aria-label="Modelo a dibujar">
+              {fitted.map((model) => (
+                <button key={model.id} className="neutral" type="button" aria-pressed={shown.id === model.id} onClick={() => setSelected(model.id)}>
+                  {model.id === "polinomico" ? "Polinómico" : model.label}
+                </button>
+              ))}
+            </div>
+            <RegressionChart values={result.values} model={shown} title={name} />
+            {result.values.length > 1500 ? <p className="note">Con muchos datos, el diagrama muestra una muestra uniforme de 1.500 puntos; el ajuste usa todos.</p> : null}
+          </article>
+          <div className="table-scroll">
+            <table className="data-table regression-table">
+              <thead><tr><th>Modelo</th><th>Ecuación</th><th>R²</th><th>R² ajustado</th></tr></thead>
+              <tbody>
+                {regression.models.map((model) => (
+                  <tr key={model.id} className={model.id === best.id ? "best" : undefined}>
+                    <td>{model.label}{model.id === best.id ? <span className="badge">Mejor ajuste</span> : null}</td>
+                    {model.applicable ? (
+                      <>
+                        <td>{formatEquation(model.id, model.coefficients)}</td>
+                        <td>{formatOutput(model.r2)}</td>
+                        <td>{Number.isFinite(model.adjustedR2) ? formatOutput(model.adjustedR2) : "—"}</td>
+                      </>
+                    ) : (
+                      <td colSpan={3}>No aplica. {model.reason}</td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function interpretation(model: RegressionModel, r: number): string {
+  const strength = fitStrength(model.r2).toLowerCase();
+  const percentage = formatDecimal(model.r2 * 100, 1, true);
+  const direction = r > 0.1 ? "tienden a subir" : r < -0.1 ? "tienden a bajar" : "no suben ni bajan de forma clara";
+  const base = `El modelo ${model.label.toLowerCase()} explica el ${percentage} % de la variación de los datos (ajuste ${strength}). A lo largo del orden, los valores ${direction}.`;
+  if (model.r2 < 0.3) return `${base} Ningún modelo describe bien estos datos: el orden en que se ingresaron casi no influye en su valor.`;
+  return base;
 }
 
 function ChevronLeft() {

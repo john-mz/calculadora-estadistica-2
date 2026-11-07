@@ -1,7 +1,8 @@
 import { jsPDF } from "jspdf";
 import type { Distribution } from "../domain/calculate";
-import { formatBound, formatInteger, formatMark, formatMeasure, formatRelative } from "../domain/format";
-import { renderChartImage } from "./charts";
+import { formatBound, formatEquation, formatInteger, formatMark, formatMeasure, formatOutput, formatRelative } from "../domain/format";
+import { fitStrength, type RegressionModel } from "../domain/regression";
+import { renderChartImage, renderRegressionImage } from "./charts";
 import { PDF_BRAND as BRAND, PDF_INK as INK, PDF_LINE as LINE, PDF_MUTED as MUTED, PDF_PAPER as PAPER } from "./palette";
 
 export function downloadPdf(result: Distribution, name: string): void {
@@ -34,6 +35,8 @@ export function downloadPdf(result: Distribution, name: string): void {
     doc.addImage(url, "PNG", margin, y, width, imageHeight);
     y += imageHeight + 22;
   });
+
+  drawRegression(doc, result, name, margin, width);
 
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page += 1) {
@@ -164,6 +167,81 @@ function drawFrequencyTable(
   });
   doc.setDrawColor(...LINE);
   return y;
+}
+
+function drawRegression(doc: jsPDF, result: Distribution, name: string, x: number, width: number): void {
+  const { regression } = result;
+  const best = regression.models.find((model): model is RegressionModel => model.applicable && model.id === regression.best);
+  doc.addPage();
+  let y = sectionTitle(doc, "Modelo de regresión", x, 36);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...MUTED);
+  doc.text(`X = posición del dato (1 a ${formatInteger(regression.n)}) · Y = su valor.`, x, y);
+  y += 18;
+  if (!best) {
+    doc.text("Hacen falta al menos 3 datos para comparar modelos de regresión.", x, y);
+    return;
+  }
+
+  doc.setFillColor(...PAPER);
+  doc.rect(x, y, width, 44, "F");
+  doc.setTextColor(...INK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text(`Modelo identificado: ${best.label}`, x + 10, y + 17);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(
+    `${pdfText(formatEquation(best.id, best.coefficients))}    R² = ${formatOutput(best.r2)}    R² ajustado = ${formatOutput(best.adjustedR2)}    Ajuste ${fitStrength(best.r2).toLowerCase()}`,
+    x + 10,
+    y + 34,
+    { maxWidth: width - 20 },
+  );
+  y += 60;
+
+  const columns = [0.24, 0.46, 0.15, 0.15].map((weight) => weight * width);
+  const rowHeight = 18;
+  doc.setFillColor(...BRAND);
+  doc.rect(x, y, width, rowHeight, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  let cursor = x;
+  ["Modelo", "Ecuación", "R²", "R² ajustado"].forEach((header, index) => {
+    doc.text(header, cursor + 6, y + 12);
+    cursor += columns[index];
+  });
+  y += rowHeight;
+  regression.models.forEach((model, index) => {
+    if (index % 2 === 0) {
+      doc.setFillColor(...PAPER);
+      doc.rect(x, y, width, rowHeight, "F");
+    }
+    doc.setTextColor(...INK);
+    doc.setFont("helvetica", model.id === best.id ? "bold" : "normal");
+    const cells = model.applicable
+      ? [model.label, pdfText(formatEquation(model.id, model.coefficients)), formatOutput(model.r2), Number.isFinite(model.adjustedR2) ? formatOutput(model.adjustedR2) : "-"]
+      : [model.label, `No aplica. ${model.reason}`, "", ""];
+    cursor = x;
+    cells.forEach((cell, cellIndex) => {
+      doc.text(cell, cursor + 6, y + 12, { maxWidth: columns[cellIndex] - 8 });
+      cursor += columns[cellIndex];
+    });
+    y += rowHeight;
+  });
+  y += 22;
+
+  y = sectionTitle(doc, "Dispersión y curva ajustada", x, y);
+  doc.addImage(renderRegressionImage(result.values, best, name), "PNG", x, y, width, width * (640 / 1200));
+}
+
+/** Helvetica en jsPDF no tiene superíndices ni signos tipográficos fuera de Latin-1. */
+function pdfText(text: string): string {
+  const map: Record<string, string> = { "⁻": "-", "⁰": "0", "¹": "1", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "−": "-" };
+  return text
+    .replace(/10([⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, (_, power: string) => `10^${[...power].map((char) => (char === "²" ? "2" : map[char])).join("")}`)
+    .replace(/[⁻⁰¹³⁴⁵⁶⁷⁸⁹−]/g, (char) => map[char]);
 }
 
 function fileName(name: string): string {
